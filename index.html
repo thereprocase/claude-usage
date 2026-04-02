@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>claude-usage — 90-day heatmap for Claude Code</title>
+  <style>
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --border:  #30363d;
+      --text:    #e6edf3;
+      --muted:   #8b949e;
+      --green1:  #0e4429;
+      --green2:  #006d32;
+      --green3:  #26a641;
+      --green4:  #39d353;
+      --red:     #f85149;
+      --accent:  #39d353;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ─────────────────────────────────────────────────────────────── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 0 1.5rem;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    section {
+      padding: 3rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section:last-child { border-bottom: none; }
+
+    /* ── Header ─────────────────────────────────────────────────────────────── */
+    .logo {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+
+    .tagline {
+      color: var(--muted);
+      margin-top: 0.4rem;
+      font-size: 1.05rem;
+    }
+
+    .badges {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      font-family: monospace;
+      color: var(--muted);
+    }
+
+    .badge.green { border-color: var(--green2); color: var(--green4); }
+    .badge.red   { border-color: #6e2a2a; color: var(--red); }
+
+    /* ── Terminal preview ───────────────────────────────────────────────────── */
+    .terminal {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 2rem 0;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .terminal-titlebar {
+      background: #1c2128;
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.red    { background: #ff5f56; }
+    .dot.yellow { background: #ffbd2e; }
+    .dot.green  { background: #27c93f; }
+
+    .terminal-titlebar span {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .terminal-body { padding: 1.2rem 1.4rem; }
+
+    .t-bold { font-weight: 700; color: #e6edf3; }
+    .t-dim  { color: #484f58; }
+    .t-g1   { color: #0e4429; }
+    .t-g2   { color: #1a7f37; }
+    .t-g3   { color: #26a641; }
+    .t-g4   { color: #39d353; }
+    .t-red  { color: #f85149; }
+    .t-line { display: block; white-space: pre; }
+
+    /* ── Features ───────────────────────────────────────────────────────────── */
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      color: var(--text);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .feature {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+    }
+
+    .feature-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+
+    .feature h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .feature p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── Platform table ─────────────────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th { color: var(--muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .check { color: var(--accent); font-weight: 700; }
+    .cross { color: var(--red); font-weight: 700; }
+
+    /* ── Install ────────────────────────────────────────────────────────────── */
+    .install-tabs {
+      display: flex;
+      gap: 0.3rem;
+      margin-bottom: 0;
+    }
+
+    .tab-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.9rem;
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .tab-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0 6px 6px 6px;
+      padding: 1rem 1.2rem;
+    }
+
+    .tab-panel.active { display: block; }
+
+    pre {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.82rem;
+      color: #e6edf3;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .comment { color: #6e7681; }
+
+    /* ── Footer ─────────────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 2rem 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="logo">claude-usage</div>
+    <div class="tagline">90-day token heatmap for Claude Code — local data, no API needed</div>
+    <div class="badges">
+      <span class="badge green">Python 3.8+</span>
+      <span class="badge green">stdlib only</span>
+      <span class="badge">macOS · Linux · Windows</span>
+      <span class="badge">MIT</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="container">
+    <div class="terminal">
+      <div class="terminal-titlebar">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+        <span>~ — bash</span>
+      </div>
+      <div class="terminal-body">
+
+        <span class="t-line"><span class="t-dim">$</span> bash ~/.claude/claude-usage.sh</span>
+        <span class="t-line"> </span>
+        <span class="t-line"><span class="t-bold">Claude Usage — last 90 days</span></span>
+        <span class="t-line"> </span>
+        <span class="t-line">      <span class="t-dim">Jan</span>             <span class="t-dim">Feb</span>             <span class="t-dim">Mar</span>             </span>
+        <span class="t-line"><span class="t-dim">Mo</span>    <span class="t-g1">░</span> <span class="t-g1">░</span> <span class="t-g1">░</span> <span class="t-g1">░</span>   <span class="t-g2">▒</span> <span class="t-g2">▒</span> <span class="t-g2">▒</span>   <span class="t-g3">▓</span> <span class="t-g3">▓</span> <span class="t-g4">█</span> <span class="t-g4">█</span> </span>
+        <span class="t-line"><span class="t-dim">Tu</span>    <span class="t-g1">░</span> <span class="t-g1">░</span> <span class="t-g1">░</span>     <span class="t-g2">▒</span> <span class="t-g2">▒</span> <span class="t-g2">▒</span>   <span class="t-g3">▓</span> <span class="t-g3">▓</span> <span class="t-g4">█</span> <span class="t-red">▲</span> </span>
+        <span class="t-line"><span class="t-dim">We</span>    <span class="t-g1">░</span> <span class="t-g1">░</span>     <span class="t-g1">░</span> <span class="t-g2">▒</span> <span class="t-g2">▒</span>     <span class="t-g3">▓</span> <span class="t-g3">▓</span> <span class="t-g4">█</span> <span class="t-red">▲</span> </span>
+        <span class="t-line"><span class="t-dim">Th</span>    <span class="t-g1">░</span> <span class="t-g1">░</span> <span class="t-g1">░</span>     <span class="t-g2">▒</span> <span class="t-g2">▒</span>     <span class="t-g3">▓</span> <span class="t-g4">█</span> <span class="t-g4">█</span> <span class="t-red">▲</span> </span>
+        <span class="t-line"><span class="t-dim">Fr</span>      <span class="t-g1">░</span> <span class="t-g1">░</span>   <span class="t-g2">▒</span> <span class="t-g2">▒</span> <span class="t-g2">▒</span>   <span class="t-g3">▓</span> <span class="t-g3">▓</span> <span class="t-g4">█</span>   </span>
+        <span class="t-line"><span class="t-dim">Sa</span>    <span class="t-g1">░</span>     <span class="t-g1">░</span>   <span class="t-g2">▒</span> <span class="t-g2">▒</span>     <span class="t-g3">▓</span> <span class="t-g4">█</span> <span class="t-g4">█</span>   </span>
+        <span class="t-line"><span class="t-dim">Su</span>      <span class="t-g1">░</span>     <span class="t-g1">░</span> <span class="t-g2">▒</span>       <span class="t-g3">▓</span> <span class="t-g4">█</span> <span class="t-g4">█</span>   </span>
+        <span class="t-line"> </span>
+        <span class="t-line"><span class="t-bold">Last 90 days:</span>  107776 turns | 385.4M tokens | 913 sessions</span>
+        <span class="t-line"><span class="t-bold">Peak day:</span>      2026-04-02 — 77.5M tokens</span>
+        <span class="t-line"> </span>
+        <span class="t-line"><span class="t-bold">By project:</span></span>
+        <span class="t-line">  ClauDe/orcaPatch    <span class="t-g4">█████</span><span class="t-g1">░░░░░░░░░░░</span> 34%</span>
+        <span class="t-line">  ClauDe/gridfinity   <span class="t-g4">███</span><span class="t-g1">░░░░░░░░░░░░░</span> 21%</span>
+        <span class="t-line">  other               <span class="t-g3">███</span><span class="t-g1">░░░░░░░░░░░░░</span> 45%</span>
+        <span class="t-line"> </span>
+        <span class="t-line"><span class="t-bold">By model:</span></span>
+        <span class="t-line">  opus    <span class="t-g4">███████████</span><span class="t-g1">░░░░░</span> 73%</span>
+        <span class="t-line">  sonnet  <span class="t-g3">███</span><span class="t-g1">░░░░░░░░░░░░░</span> 22%</span>
+        <span class="t-line">  haiku   <span class="t-g1">█░░░░░░░░░░░░░░░</span>  6%</span>
+        <span class="t-line"> </span>
+        <span class="t-line"><span class="t-bold">Rate limits:</span>   <span class="t-red">▲</span> 3 days with threshold crossings in this period</span>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h2>What it tracks</h2>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">📊</div>
+        <h3>13-week heatmap</h3>
+        <p>GitHub-style calendar grid, Monday-anchored. Intensity is rank-based quartiles so one monster day doesn't flatten everything else.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🪙</div>
+        <h3>Token breakdown</h3>
+        <p>Input + cache creation + output, summed across the window. Cache reads excluded — they're reuse, not spend.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📁</div>
+        <h3>By project</h3>
+        <p>Derived from <code>cwd</code> in each transcript entry. No configuration needed — it figures out what you were working on.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🤖</div>
+        <h3>By model</h3>
+        <p>Opus vs. sonnet vs. haiku token split at a glance. Useful for understanding where your compute is going.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔴</div>
+        <h3>Rate limit markers</h3>
+        <p>Days with threshold crossings are marked in red on the heatmap. Reads <code>~/.claude/rate-limit-log.jsonl</code> if present.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <h3>Fully local</h3>
+        <p>Reads only <code>~/.claude/projects/</code> on your machine. No network calls, no auth, no data leaves your system.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h2>Platform support</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Platform</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>macOS</td>
+          <td><span class="check">✓</span></td>
+          <td>Native ANSI. Use <code>claude-usage.sh</code>.</td>
+        </tr>
+        <tr>
+          <td>Linux</td>
+          <td><span class="check">✓</span></td>
+          <td>Native ANSI. Use <code>claude-usage.sh</code>.</td>
+        </tr>
+        <tr>
+          <td>Windows Terminal</td>
+          <td><span class="check">✓</span></td>
+          <td>VT100 enabled by default. Use <code>claude-usage.ps1</code>.</td>
+        </tr>
+        <tr>
+          <td>VS Code terminal</td>
+          <td><span class="check">✓</span></td>
+          <td>Full color support. Use <code>claude-usage.ps1</code>.</td>
+        </tr>
+        <tr>
+          <td>Windows cmd.exe</td>
+          <td><span class="cross">✗</span></td>
+          <td>No ANSI 256-color. Use Windows Terminal instead.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h2>Install</h2>
+
+    <div class="install-tabs">
+      <button class="tab-btn active" onclick="showTab('mac')">macOS / Linux</button>
+      <button class="tab-btn" onclick="showTab('win')">Windows</button>
+      <button class="tab-btn" onclick="showTab('slash')">Slash command</button>
+    </div>
+
+    <div id="tab-mac" class="tab-panel active">
+      <pre><span class="comment"># One-liner</span>
+curl -fsSL https://raw.githubusercontent.com/thereprocase/claude-usage/main/install.sh | bash
+
+<span class="comment"># Or manually</span>
+cp claude-usage.py ~/.claude/
+cp claude-usage.sh ~/.claude/
+chmod +x ~/.claude/claude-usage.sh
+
+<span class="comment"># Run</span>
+bash ~/.claude/claude-usage.sh</pre>
+    </div>
+
+    <div id="tab-win" class="tab-panel">
+      <pre><span class="comment"># One-liner (PowerShell)</span>
+irm https://raw.githubusercontent.com/thereprocase/claude-usage/main/install.ps1 | iex
+
+<span class="comment"># Or manually</span>
+Copy-Item claude-usage.py  $HOME\.claude\
+Copy-Item claude-usage.ps1 $HOME\.claude\
+
+<span class="comment"># Run</span>
+pwsh $HOME\.claude\claude-usage.ps1</pre>
+    </div>
+
+    <div id="tab-slash" class="tab-panel">
+      <pre><span class="comment"># Add to ~/.claude/settings.json</span>
+{
+  "slash_commands": {
+    "usage-graph": {
+      "description": "Show 90-day Claude usage heatmap",
+      "command": "bash ~/.claude/claude-usage.sh"
+    }
+  }
+}
+
+<span class="comment"># Windows: replace command with</span>
+<span class="comment"># "pwsh $HOME\\.claude\\claude-usage.ps1"</span>
+
+<span class="comment"># Then in any Claude Code session:</span>
+/usage-graph</pre>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <a href="https://github.com/thereprocase/claude-usage">github.com/thereprocase/claude-usage</a>
+    &nbsp;·&nbsp;
+    MIT License
+  </div>
+</footer>
+
+<script>
+  function showTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+
+</body>
+</html>
