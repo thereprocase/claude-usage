@@ -5,33 +5,25 @@
 ```
 Claude Usage — last 90 days
 
-      Jan             Feb             Mar
-Mo      · · · · · · · · · · ▒ ▒
-Tu      · · · · · · · · · · ░ ▲
-We      · · · · · · · · · · ░ ▲
-Th      · · · · · · · · · · ▓ ▲
-Fr      · · · · · · · · · · ▒ ▓
-Sa      · · · · · · · · · · ░ █
-Su      · · · · · · · · · · ░ █
+      W2 W3 W4 W5 W6 W7 W8 W9 W10W11W12W13W14
+Mo    ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ▒  ▒
+Tu    ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ░  ▓
+We    ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ░  ▓
+Th    ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ▒  █
+Fr    ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ▒  ▓  ▓
+Sa    ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ░  █
+Su    ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ░  █
+                                          ▼
 
-Last 90 days:  107776 turns | 385.4M tokens | 913 sessions
-Peak day:      2026-04-02 — 77.5M tokens
+Legend:  ░low  ▒mod  ▓heavy  █max  ▲5hr≥95%  ▼wk≥95%
 
-By project:
-  ClauDe/orcaPatch            █████░░░░░░░░░░░ 34%
-  ClauDe/gridfinity           ███░░░░░░░░░░░░░ 21%
-  ClauDe/fieldLog             █░░░░░░░░░░░░░░░  4%
-  other                       ███░░░░░░░░░░░░░ 23%
+Last 90 days:  121981 turns | 418.6M tokens | 1038 sessions
+Peak day:      2026-04-02 — 90.5M tokens
 
-By model:
-  opus    ███████████░░░░░ 73%
-  sonnet  ███░░░░░░░░░░░░░ 22%
-  haiku   █░░░░░░░░░░░░░░░  6%
-
-Rate limits:   ▲ 3 days with threshold crossings in this period
+Rate limits:   ▼ 1 week at weekly limit
 ```
 
-> The actual output is color-coded: green intensity heatmap, red `▲` for rate-limit days.
+> Color-coded: blue→cyan→green→yellow→orange gradient (20 steps, 4 shape bands). Red `▲` for 5-hour rate limit spikes, magenta `▼` for weekly limit breaches. Red and magenta are reserved exclusively for alarms — they never appear in the volume gradient.
 
 ---
 
@@ -61,6 +53,14 @@ Intensity levels on the heatmap are rank-based quartiles across active days, so 
 | Windows (plain cmd.exe) | ❌ | No ANSI 256-color support |
 
 Python 3.8+, stdlib only — no external dependencies.
+
+### Optional: Rate limit markers
+
+The `▲` (5-hour spike) and `▼` (weekly breach) markers require [claude-statusline](https://github.com/thereprocase/claude-statusline) to be installed. The status line detects when rate limit windows hit ≥95% and logs events to `~/.claude/rate-limit-log.jsonl`. The usage graph reads that file.
+
+**Without claude-statusline:** The heatmap renders normally with the full gradient, but no rate limit markers appear. The summary shows "no 95% crossing data available" instead of spike/breach counts.
+
+**With claude-statusline:** Rate limit events are logged automatically on every Claude response. No additional configuration needed — install both tools and the markers appear.
 
 ---
 

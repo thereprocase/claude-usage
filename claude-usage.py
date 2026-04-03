@@ -11,12 +11,26 @@ from collections import defaultdict
 R    = '\033[0m'
 DIM  = '\033[2m'
 BOLD = '\033[1m'
-RED  = '\033[38;5;196m'
-GRAY = '\033[38;5;238m'
 
-# 5 intensity levels: empty → dark green → mid → bright green → peak
-HEAT = [GRAY, '\033[38;5;22m', '\033[38;5;28m', '\033[38;5;34m', '\033[38;5;82m']
-BLOCKS = ' ░▒▓█'
+def fg(c):
+    return f'\033[38;5;{c}m'
+
+SPIKE_C  = fg(196)  # red — 5-hour spike
+WEEKLY_C = fg(201)  # magenta — weekly breach
+GRAY_C   = fg(240)  # no data
+
+# 20-step gradient: blue → cyan → green → yellow → orange
+# 4 shape bands × 5 color steps. Red/magenta reserved for alarms only.
+GRADIENT = [
+    # Band 1: ░ light shade — "barely there"
+    (21,  '░'), (27,  '░'), (33,  '░'), (39,  '░'), (45,  '░'),
+    # Band 2: ▒ medium shade — "moderate"
+    (51,  '▒'), (50,  '▒'), (49,  '▒'), (48,  '▒'), (47,  '▒'),
+    # Band 3: ▓ dark shade — "heavy"
+    (46,  '▓'), (82,  '▓'), (118, '▓'), (154, '▓'), (190, '▓'),
+    # Band 4: █ full block — "maxed out"
+    (226, '█'), (220, '█'), (214, '█'), (208, '█'), (202, '█'),
+]
 
 # ── Config ────────────────────────────────────────────────────────────────────
 claude_dir   = os.path.expanduser('~/.claude')
@@ -91,8 +105,10 @@ for jsonl_path in glob.glob(os.path.join(projects_dir, '**', '*.jsonl'), recursi
     except Exception:
         continue
 
-# ── Rate limit crossing days ──────────────────────────────────────────────────
-rl_days = set()
+# ── Rate limit crossings — separate 5-hour and weekly ────────────────────────
+spike_days = set()   # days with 5-hour ≥95%
+weekly_breach_weeks = set()  # ISO week numbers with 7-day ≥95%
+
 try:
     with open(log_file, encoding='utf-8') as f:
         for line in f:
@@ -102,28 +118,40 @@ try:
             try:
                 e = json.loads(line)
                 d = date.fromisoformat(e.get('ts', '')[:10])
-                if cutoff <= d <= today:
-                    rl_days.add(d)
+                if d < cutoff or d > today:
+                    continue
+                window = e.get('window', '')
+                threshold = e.get('threshold', 0)
+                if threshold >= 95:
+                    if window == 'five_hour':
+                        spike_days.add(d)
+                    elif window == 'seven_day':
+                        # Store as (year, iso_week) tuple
+                        yr, wk, _ = d.isocalendar()
+                        weekly_breach_weeks.add((yr, wk))
             except Exception:
                 continue
 except FileNotFoundError:
     pass
 
-# ── Intensity: rank-based quartiles of active days ───────────────────────────
-# Assign level 1-4 by rank position among days with usage, so the heatmap
-# shows relative patterns rather than compressing against outlier spikes.
+# ── Intensity: 20-level rank-based scale ─────────────────────────────────────
+# Assign level 0-19 by rank position among days with usage.
 active_sorted = sorted((d for d in days if days[d]['tokens'] > 0),
                        key=lambda d: days[d]['tokens'])
 n = len(active_sorted)
 rank_level = {}
 for i, d in enumerate(active_sorted):
-    if   i < n * 0.25: rank_level[d] = 1
-    elif i < n * 0.50: rank_level[d] = 2
-    elif i < n * 0.75: rank_level[d] = 3
-    else:              rank_level[d] = 4
+    rank_level[d] = min(int(i / max(n, 1) * 20), 19)
 
-def intensity(d):
-    return rank_level.get(d, 0)
+def cell(d):
+    """Return (colored_char, is_spike) for a day."""
+    lvl = rank_level.get(d, -1)
+    if d in spike_days:
+        return f'{SPIKE_C}▲{R}', True
+    if lvl < 0:
+        return f'{GRAY_C}·{R}', False
+    color, glyph = GRADIENT[lvl]
+    return f'{fg(color)}{glyph}{R}', False
 
 # ── Heatmap ───────────────────────────────────────────────────────────────────
 # 13 weeks × 7 days, Monday-anchored, weeks as columns
@@ -135,33 +163,50 @@ print()
 print(f'{BOLD}Claude Usage — last 90 days{R}')
 print()
 
-# Month label row — label appears on the first week that falls in each month
-month_row = '      '
-prev_mo   = None
+# Week ID row — aligned with columns
+wk_row = '      '
 for w in range(13):
-    d  = start + timedelta(weeks=w)
-    mo = d.strftime('%b')
-    if mo != prev_mo:
-        month_row += f'{DIM}{mo}{R} '
-        prev_mo = mo
-    else:
-        month_row += '    '
-print(month_row)
+    d = start + timedelta(weeks=w)
+    yr, wk, _ = d.isocalendar()
+    wk_row += f'{DIM}W{wk:<2}{R}'
+print(wk_row)
 
+# Heatmap rows
 for dow in range(7):
     row = f'{DIM}{DAY_LABELS[dow]}{R}    '
     for w in range(13):
         d = start + timedelta(weeks=w, days=dow)
         if d > today:
-            row += '  '
+            row += '   '
             continue
-        lvl = intensity(d)
-        if d in rl_days:
-            row += f'{RED}▲{R} '
-        else:
-            row += f'{HEAT[lvl]}{BLOCKS[lvl]}{R} '
+        ch, _ = cell(d)
+        row += f'{ch}  '
     print(row)
 
+# Weekly breach marker row
+breach_row = '      '
+for w in range(13):
+    d = start + timedelta(weeks=w)
+    yr, wk, _ = d.isocalendar()
+    if (yr, wk) in weekly_breach_weeks:
+        breach_row += f'{WEEKLY_C}▼{R}  '
+    else:
+        breach_row += '   '
+# Only print if there are any breaches (avoid empty row)
+if weekly_breach_weeks:
+    print(breach_row)
+
+print()
+
+# ── Legend ────────────────────────────────────────────────────────────────────
+legend = f'{DIM}Legend:{R}  '
+legend += f'{fg(21)}░{R}{DIM}low{R}  '
+legend += f'{fg(51)}▒{R}{DIM}mod{R}  '
+legend += f'{fg(82)}▓{R}{DIM}heavy{R}  '
+legend += f'{fg(226)}█{R}{DIM}max{R}  '
+legend += f'{SPIKE_C}▲{R}{DIM}5hr≥95%{R}  '
+legend += f'{WEEKLY_C}▼{R}{DIM}wk≥95%{R}'
+print(legend)
 print()
 
 # ── Summary ───────────────────────────────────────────────────────────────────
@@ -181,7 +226,7 @@ print(f'{BOLD}Last 90 days:{R}  {total_turns} turns | {fmt_tok(total_tokens)} to
 if peak_day:
     print(f'{BOLD}Peak day:{R}      {peak_day} — {fmt_tok(peak_tokens)} tokens')
 
-# By project (top 5 + other)
+# By project (top 8 + other)
 if project_totals and total_tokens:
     print()
     print(f'{BOLD}By project:{R}')
@@ -204,11 +249,22 @@ if model_totals and total_tokens:
         f = tok / total_tokens
         print(f'  {mod:<{col}}  {spark_bar(f)} {f*100:.0f}%')
 
-# Rate limits
+# Rate limit summary
 print()
-if rl_days:
-    print(f'{BOLD}Rate limits:{R}   {RED}▲{R} {len(rl_days)} day{"s" if len(rl_days) != 1 else ""} with threshold crossings in this period')
+spike_count = len(spike_days)
+breach_count = len(weekly_breach_weeks)
+if spike_count or breach_count:
+    parts = []
+    if spike_count:
+        parts.append(f'{SPIKE_C}▲{R} {spike_count} day{"s" if spike_count != 1 else ""} with 5hr spike')
+    if breach_count:
+        parts.append(f'{WEEKLY_C}▼{R} {breach_count} week{"s" if breach_count != 1 else ""} at weekly limit')
+    print(f'{BOLD}Rate limits:{R}   {"  ".join(parts)}')
 else:
-    print(f'{BOLD}Rate limits:{R}   no crossings in this period')
+    # Distinguish "no crossings logged" from "no log file" (statusline not installed)
+    if os.path.exists(log_file):
+        print(f'{BOLD}Rate limits:{R}   no 95% crossings in this period')
+    else:
+        print(f'{BOLD}Rate limits:{R}   {DIM}no 95% crossing data available (install claude-statusline){R}')
 
 print()
