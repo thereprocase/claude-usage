@@ -239,8 +239,12 @@
       font-size: 0.85rem;
     }
   </style>
+<meta name="gridline-version" content="2026-09-09">
+<link rel="stylesheet" href="gridline/gridline.css?v=2026-09-09">
+<link rel="stylesheet" href="gridline/legacy.css?v=2026-09-09">
+<link rel="icon" type="image/svg+xml" href="gridline/logo.svg">
 </head>
-<body>
+<body class="gridline gl-usage" data-gridline="2026-09-09"><a class="gl-skip" href="#gl-content">Skip to content</a><div class="gl-global-header" role="banner"><a href="https://thereprocase.github.io/"><img src="gridline/logo-white.svg" width="20" height="20" alt="">thereprocase</a><span>CLAUDE USAGE / LOCAL TRANSCRIPT TOOLS</span></div><nav class="gl-global-menu" aria-label="Project network"><a href="https://thereprocase.github.io/">All projects</a><a href="index.html" aria-current="true">Project home</a><a href="https://thereprocase.github.io/#render-library">Renders</a><a href="https://thereprocase.github.io/#airflow">Flow videos</a><a href="https://github.com/thereprocase/claude-usage">Source ↗</a></nav><nav class="gl-outline" aria-label="On this page"><span>CONTENTS</span><a href="#gl-section-1">What it tracks</a><a href="#gl-section-2">Platform support</a><a href="#gl-section-3">Install</a></nav><span id="gl-content" tabindex="-1"></span>
 
 <header>
   <div class="container">
@@ -255,13 +259,13 @@
   </div>
 </header>
 
-<section>
+<main><section>
   <div class="container">
     <div class="terminal">
       <div class="terminal-titlebar">
-        <div class="dot red"></div>
-        <div class="dot yellow"></div>
-        <div class="dot green"></div>
+
+
+
         <span>~ — bash</span>
       </div>
       <div class="terminal-body">
@@ -304,35 +308,35 @@
 
 <section>
   <div class="container">
-    <h2>What it tracks</h2>
+    <h2 id="gl-section-1">What it tracks</h2>
     <div class="features">
       <div class="feature">
-        <div class="feature-icon">📊</div>
+
         <h3>13-week heatmap</h3>
         <p>GitHub-style calendar grid, Monday-anchored. Intensity is rank-based quartiles so one monster day doesn't flatten everything else.</p>
       </div>
       <div class="feature">
-        <div class="feature-icon">🪙</div>
+
         <h3>Token breakdown</h3>
         <p>Input + cache creation + output, summed across the window. Cache reads excluded — they're reuse, not spend.</p>
       </div>
       <div class="feature">
-        <div class="feature-icon">📁</div>
+
         <h3>By project</h3>
         <p>Derived from <code>cwd</code> in each transcript entry. No configuration needed — it figures out what you were working on.</p>
       </div>
       <div class="feature">
-        <div class="feature-icon">🤖</div>
+
         <h3>By model</h3>
         <p>Opus vs. sonnet vs. haiku token split at a glance. Useful for understanding where your compute is going.</p>
       </div>
       <div class="feature">
-        <div class="feature-icon">🔴</div>
+
         <h3>Rate limit markers</h3>
         <p>Red <code>▲</code> marks days with 5-hour spikes (≥95%). Magenta <code>▼</code> marks weeks at weekly limit. Requires <a href="https://github.com/thereprocase/claude-statusline">claude-statusline</a> for data.</p>
       </div>
       <div class="feature">
-        <div class="feature-icon">🔒</div>
+
         <h3>Fully local</h3>
         <p>Reads only <code>~/.claude/projects/</code> on your machine. No network calls, no auth, no data leaves your system.</p>
       </div>
@@ -342,7 +346,7 @@
 
 <section>
   <div class="container">
-    <h2>Platform support</h2>
+    <h2 id="gl-section-2">Platform support</h2>
     <table>
       <thead>
         <tr>
@@ -354,27 +358,27 @@
       <tbody>
         <tr>
           <td>macOS</td>
-          <td><span class="check">✓</span></td>
+          <td><span class="check">YES</span></td>
           <td>Native ANSI. Use <code>claude-usage.sh</code>.</td>
         </tr>
         <tr>
           <td>Linux</td>
-          <td><span class="check">✓</span></td>
+          <td><span class="check">YES</span></td>
           <td>Native ANSI. Use <code>claude-usage.sh</code>.</td>
         </tr>
         <tr>
           <td>Windows Terminal</td>
-          <td><span class="check">✓</span></td>
+          <td><span class="check">YES</span></td>
           <td>VT100 enabled by default. Use <code>claude-usage.ps1</code>.</td>
         </tr>
         <tr>
           <td>VS Code terminal</td>
-          <td><span class="check">✓</span></td>
+          <td><span class="check">YES</span></td>
           <td>Full color support. Use <code>claude-usage.ps1</code>.</td>
         </tr>
         <tr>
           <td>Windows cmd.exe</td>
-          <td><span class="cross">✗</span></td>
+          <td><span class="cross">NO</span></td>
           <td>No ANSI 256-color. Use Windows Terminal instead.</td>
         </tr>
       </tbody>
@@ -384,12 +388,12 @@
 
 <section>
   <div class="container">
-    <h2>Install</h2>
+    <h2 id="gl-section-3">Install</h2>
 
     <div class="install-tabs">
-      <button class="tab-btn active" onclick="showTab('mac')">macOS / Linux</button>
-      <button class="tab-btn" onclick="showTab('win')">Windows</button>
-      <button class="tab-btn" onclick="showTab('slash')">Slash command</button>
+      <button class="tab-btn active" onclick="showTab('mac', this)" aria-pressed="true">macOS / Linux</button>
+      <button class="tab-btn" onclick="showTab('win', this)" aria-pressed="false">Windows</button>
+      <button class="tab-btn" onclick="showTab('slash', this)" aria-pressed="false">Slash command</button>
     </div>
 
     <div id="tab-mac" class="tab-panel active">
@@ -438,7 +442,7 @@ pwsh $HOME\.claude\claude-usage.ps1</pre>
   </div>
 </section>
 
-<footer>
+</main><footer>
   <div class="container">
     <a href="https://github.com/thereprocase/claude-usage">github.com/thereprocase/claude-usage</a>
     &nbsp;·&nbsp;
@@ -447,13 +451,14 @@ pwsh $HOME\.claude\claude-usage.ps1</pre>
 </footer>
 
 <script>
-  function showTab(name) {
+  function showTab(name, button) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
     document.getElementById('tab-' + name).classList.add('active');
-    event.target.classList.add('active');
+    button.classList.add('active');
+    button.setAttribute('aria-pressed', 'true');
   }
 </script>
 
-</body>
+<div class="gl-global-footer" role="contentinfo"><span>CLAUDE-USAGE</span><span>GRIDLINE / PROJECT RECORD</span><a href="https://thereprocase.github.io/">Open project directory ↗</a></div></body>
 </html>
